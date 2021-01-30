@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Phorks</Authors>
+    <PackageIcon>phorksc-128x128.png</PackageIcon>
+    <RepositoryUrl>https://github.com/phorks/phork-common</RepositoryUrl>
+    <PackageTags>dotnet;dotnetcore;</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\assets\phorksc-128x128.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>
