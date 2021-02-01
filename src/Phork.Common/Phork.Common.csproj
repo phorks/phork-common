@@ -6,6 +6,7 @@
     <PackageIcon>phorksc-128x128.png</PackageIcon>
     <RepositoryUrl>https://github.com/phorks/phork-common</RepositoryUrl>
     <PackageTags>dotnet;dotnetcore;</PackageTags>
+    <RootNamespace>Phork</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

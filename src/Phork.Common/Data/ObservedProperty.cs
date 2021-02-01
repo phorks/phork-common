@@ -13,11 +13,15 @@ namespace Phork.Data
         protected Action Callback { get; }
         protected bool IsSuppressed { get; private set; }
 
+        public Type ValueType { get; }
+
 
         internal ObservedProperty(LambdaExpression propertyAccessor, Action callback)
         {
             Guard.ArgumentNotNull(propertyAccessor, nameof(propertyAccessor));
             Guard.ArgumentNotNull(callback, nameof(callback));
+
+            this.ValueType = propertyAccessor.ReturnType;
 
             this.Callback = callback;
 
@@ -63,9 +67,19 @@ namespace Phork.Data
             }
         }
 
+        protected virtual void OnValueUpdated()
+        {
+            if (this.IsSuppressed)
+            {
+                return;
+            }
+
+            this.Callback();
+        }
+
         public void Refresh()
         {
-            this.FirstNode.RefreshOwner();
+            this.FirstNode.Refresh();
         }
 
         public IDisposable Suppress()
@@ -83,66 +97,76 @@ namespace Phork.Data
 
         protected class ObservedPropertyNode : IDisposable
         {
-            private readonly Delegate ownerAccessor;
+            private readonly Delegate objectAccessor;
             private readonly MemberInfo memberInfo;
             private readonly ObservedProperty observer;
 
-            private object owner;
+            private object currentObject;
 
             public ObservedPropertyNode Next { get; set; }
 
             public ObservedPropertyNode(MemberExpression expression,
                 ObservedProperty observer)
             {
-                this.ownerAccessor = Expression.Lambda(expression.Expression).Compile();
+                this.objectAccessor = Expression.Lambda(expression.Expression).Compile();
                 this.memberInfo = expression.Member;
                 this.observer = observer;
 
-                this.OnOwnerUpdated();
+                this.UpdateObject();
             }
 
             private void Subscribe()
             {
-                if (this.owner is INotifyPropertyChanged notifier)
+                if (this.currentObject is INotifyPropertyChanged notifier)
                 {
-                    notifier.PropertyChanged += this.Owner_PropertyChanged;
+                    notifier.PropertyChanged += this.Object_PropertyChanged;
                 }
             }
 
             private void Unsubscribe()
             {
-                if (this.owner is INotifyPropertyChanged notifier)
+                if (this.currentObject is INotifyPropertyChanged notifier)
                 {
-                    notifier.PropertyChanged -= this.Owner_PropertyChanged;
+                    notifier.PropertyChanged -= this.Object_PropertyChanged;
                 }
             }
 
-            public void RefreshOwner()
+            public bool Refresh()
             {
-                this.OnOwnerUpdated();
-                this.Next?.RefreshOwner();
+                if (!this.UpdateObject())
+                {
+                    return false;
+                }
+
+                return this.Next == null || this.Next.Refresh();
             }
 
-            private void OnOwnerUpdated()
+            private bool UpdateObject()
             {
-                var newOwner = this.ownerAccessor.DynamicInvoke();
+                var newObject = this.objectAccessor.DynamicInvoke();
 
-                if (newOwner.NullSafeEquals(this.owner))
+                if (newObject.NullSafeEquals(this.currentObject))
                 {
-                    return;
+                    return false;
                 }
 
                 this.Unsubscribe();
-                this.owner = newOwner;
+                this.currentObject = newObject;
                 this.Subscribe();
+
+                return true;
             }
 
-            private void Owner_PropertyChanged(object sender, PropertyChangedEventArgs e)
+            private void Object_PropertyChanged(object sender, PropertyChangedEventArgs e)
             {
-                if (!this.observer.IsSuppressed && (e?.PropertyName == this.memberInfo.Name || e?.PropertyName == null))
+                if (e?.PropertyName == this.memberInfo.Name || e?.PropertyName == null)
                 {
-                    this.Next?.RefreshOwner();
-                    this.observer.Callback();
+                    var updated = this.Next?.Refresh();
+
+                    if (updated == true)
+                    {
+                        this.observer.OnValueUpdated();
+                    }
                 }
             }
 
