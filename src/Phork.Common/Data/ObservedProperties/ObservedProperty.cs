@@ -163,7 +163,7 @@ namespace Phork.Data
                 {
                     var updated = this.Next?.Refresh();
 
-                    if (updated == true)
+                    if (updated != false)
                     {
                         this.observer.OnValueUpdated();
                     }
