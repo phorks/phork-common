@@ -35,5 +35,41 @@ namespace Phork.Common.Tests.Data.ObservedProperties
 
             Assert.True(isCallbackCalled);
         }
+
+        [Fact]
+        public void ObservedProperty_Suppress_Works()
+        {
+            bool isCallbackCalled = false;
+            var first = ObservedPropertyModels.CreateFirst("text");
+
+            Action callback = () => isCallbackCalled = true;
+
+            var property = ObservedProperty.Create(() => first.Second.Third.Value, callback);
+
+            using (property.Suppress())
+                first.Second = ObservedPropertyModels.CreateSecond("new");
+
+            Assert.False(isCallbackCalled);
+
+            first.Second = ObservedPropertyModels.CreateSecond("new1");
+
+            Assert.True(isCallbackCalled);
+        }
+
+        [Fact]
+        public void ObservedProperty_Dispose_Works()
+        {
+            bool isCallbackCalled = false;
+            var first = ObservedPropertyModels.CreateFirst("text");
+
+            Action callback = () => isCallbackCalled = true;
+
+            var property = ObservedProperty.Create(() => first.Second.Third.Value, callback);
+            property.Dispose();
+
+            first.Second = ObservedPropertyModels.CreateSecond("new1");
+
+            Assert.False(isCallbackCalled);
+        }
     }
 }
