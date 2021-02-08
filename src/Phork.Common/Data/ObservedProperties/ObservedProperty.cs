@@ -207,7 +207,7 @@ namespace Phork.Data
         IValueReader<T>,
         IValueWriter<T>
     {
-        private readonly Expression<Func<T>> propertyAccessor;
+        public Expression<Func<T>> PropertyAccessor { get; }
 
         private Func<T> _valueGetter;
         private Func<T> ValueGetter
@@ -216,7 +216,7 @@ namespace Phork.Data
             {
                 if (this._valueGetter == null)
                 {
-                    this._valueGetter = this.propertyAccessor.Compile();
+                    this._valueGetter = this.PropertyAccessor.Compile();
                 }
 
                 return this._valueGetter;
@@ -234,7 +234,7 @@ namespace Phork.Data
                     var valueParameter = Expression.Parameter(typeof(T));
                     this._valueSetter = Expression
                         .Lambda<Action<T>>(
-                            Expression.Assign(this.propertyAccessor.Body, valueParameter),
+                            Expression.Assign(this.PropertyAccessor.Body, valueParameter),
                             valueParameter)
                         .Compile();
                 }
@@ -252,7 +252,7 @@ namespace Phork.Data
         internal ObservedProperty(Expression<Func<T>> propertyAccessor, Action callback)
             : base(propertyAccessor, callback)
         {
-            this.propertyAccessor = propertyAccessor;
+            this.PropertyAccessor = propertyAccessor;
         }
     }
 }

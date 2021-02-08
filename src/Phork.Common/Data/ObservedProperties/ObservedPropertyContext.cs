@@ -2,6 +2,7 @@
 using Phork.Expressions;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -44,31 +45,26 @@ namespace Phork.Data
                 throw new ObjectDisposedException(typeof(ObservedPropertyContext).FullName);
             }
 
-            var isScoped = MemberChainExpressionHelper.IsScoped(propertyAccessor);
-
             ObservedProperty property;
 
-            if (isScoped)
+            if (ShoudReduceRoot(propertyAccessor))
             {
-                propertyAccessor = MemberChainExpressionHelper.MakeRootMemberConstant(propertyAccessor, out var root);
+                propertyAccessor = MemberExpressionHelper.ReduceRootToConstant(propertyAccessor, out var root);
+
+                while (ShoudReduceRoot(propertyAccessor, root))
+                {
+                    propertyAccessor = MemberExpressionHelper.ReduceRootToConstant(propertyAccessor, out root);
+                }
 
                 var key = (root, propertyAccessor.ToString());
 
-                if (this.scopedProperties.TryGetValue(key, out var scopedProperty))
-                {
-                    property = scopedProperty;
-                }
-                else
+                if (!this.scopedProperties.TryGetValue(key, out property))
                 {
                     property = this.CreateObservedProperty(propertyAccessor);
                     this.scopedProperties.Add(key, property);
                 }
             }
-            else if (this.properties.TryGetValue(propertyAccessor, out var existingProperty))
-            {
-                property = existingProperty;
-            }
-            else
+            else if (!this.properties.TryGetValue(propertyAccessor, out property))
             {
                 property = this.CreateObservedProperty(propertyAccessor);
                 this.properties.Add(propertyAccessor, property);
@@ -85,6 +81,18 @@ namespace Phork.Data
             }
 
             return typedProperty;
+        }
+
+        private static bool ShoudReduceRoot(LambdaExpression expression, object root = null)
+        {
+            if (!(expression.Body is MemberExpression))
+            {
+                return false;
+            }
+
+            root = root ?? MemberExpressionHelper.GetRootObject(expression);
+
+            return !(root is INotifyPropertyChanged);
         }
 
         private void OnObservedPropertyChanged(ObservedProperty observedProperty)
