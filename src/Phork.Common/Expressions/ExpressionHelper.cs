@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Phork;
+using System.Linq.Expressions;
 
 namespace Phork.Expressions
 {
@@ -6,6 +7,8 @@ namespace Phork.Expressions
     {
         public static object Evaluate(Expression expression)
         {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
             var lambda = expression as LambdaExpression
                 ?? Expression.Lambda(expression);
 

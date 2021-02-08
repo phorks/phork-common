@@ -10,6 +10,8 @@ namespace Phork.Expressions
     {
         public static MemberExpression GetRoot(LambdaExpression expression)
         {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
             var member = expression.Body as MemberExpression;
 
             while (member != null
@@ -23,6 +25,8 @@ namespace Phork.Expressions
 
         public static Type GetRootType(LambdaExpression expression)
         {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
             var root = GetRoot(expression);
 
             if (!(root?.Expression is ConstantExpression constant))
@@ -35,6 +39,8 @@ namespace Phork.Expressions
 
         public static object GetRootObject(LambdaExpression expression)
         {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
             var root = GetRoot(expression);
 
             if (!(root?.Expression is ConstantExpression constant))
@@ -47,6 +53,8 @@ namespace Phork.Expressions
 
         public static MemberExpression[] GetOrderedChain(LambdaExpression expression)
         {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
             var expressions = new Stack<MemberExpression>();
 
             var iterator = expression.Body as MemberExpression;
@@ -65,12 +73,16 @@ namespace Phork.Expressions
 
         public static bool IsScoped(LambdaExpression expression)
         {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
             var rootType = GetRootType(expression);
             return rootType.IsDefined(typeof(CompilerGeneratedAttribute));
         }
 
         public static Expression<Func<T>> ReduceRootToConstant<T>(Expression<Func<T>> expression, out object root)
         {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
             var expressions = GetOrderedChain(expression);
 
             if (expressions.Length <= 1)
