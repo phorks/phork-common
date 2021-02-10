@@ -4,21 +4,21 @@ namespace System.Collections.Generic
 {
     public static class CollectionExtensions
     {
-        public static bool AddIfNotExists<T>(this ICollection<T> source, T item)
+        public static bool AddIfNotExists<T>(this ICollection<T> collection, T item)
         {
-            Guard.ArgumentNotNull(source, nameof(source));
+            Guard.ArgumentNotNull(collection, nameof(collection));
 
-            if (source.Contains(item))
+            if (collection.Contains(item))
             {
                 return false;
             }
 
-            source.Add(item);
+            collection.Add(item);
 
             return true;
         }
 
-        public static void AddIfNotNull<T>(this IList<T> collection, T item)
+        public static void AddIfNotNull<T>(this ICollection<T> collection, T item)
             where T : class
         {
             Guard.ArgumentNotNull(collection, nameof(collection));

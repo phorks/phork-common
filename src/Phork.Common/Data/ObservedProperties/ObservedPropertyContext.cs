@@ -14,7 +14,7 @@ namespace Phork.Data
         private bool isDisposed = false;
 
         private readonly Dictionary<LambdaExpression, ObservedProperty> properties
-            = new Dictionary<LambdaExpression, ObservedProperty>(LambdaExpressionEqualityComparer.Instance);
+            = new Dictionary<LambdaExpression, ObservedProperty>();
 
         private readonly Dictionary<(object root, string expression), ObservedProperty> scopedProperties
             = new Dictionary<(object root, string expression), ObservedProperty>(ScopedKeyEqualityComparer.Instance);
@@ -47,13 +47,19 @@ namespace Phork.Data
 
             ObservedProperty property;
 
-            if (ShoudReduceRoot(propertyAccessor))
+            if (ShouldReduceRoot(propertyAccessor))
             {
-                propertyAccessor = MemberExpressionHelper.ReduceRootToConstant(propertyAccessor, out var root);
+                bool isReducible = MemberExpressionHelper.TryReduceRootToConstant(
+                    propertyAccessor,
+                    out propertyAccessor,
+                    out var root);
 
-                while (ShoudReduceRoot(propertyAccessor, root))
+                while (isReducible && ShouldReduceRoot(propertyAccessor, root))
                 {
-                    propertyAccessor = MemberExpressionHelper.ReduceRootToConstant(propertyAccessor, out root);
+                    isReducible = MemberExpressionHelper.TryReduceRootToConstant(
+                        propertyAccessor,
+                        out propertyAccessor,
+                        out root);
                 }
 
                 var key = (root, propertyAccessor.ToString());
@@ -81,18 +87,6 @@ namespace Phork.Data
             }
 
             return typedProperty;
-        }
-
-        private static bool ShoudReduceRoot(LambdaExpression expression, object root = null)
-        {
-            if (!(expression.Body is MemberExpression))
-            {
-                return false;
-            }
-
-            root = root ?? MemberExpressionHelper.GetRootObject(expression);
-
-            return !(root is INotifyPropertyChanged);
         }
 
         private void OnObservedPropertyChanged(ObservedProperty observedProperty)
@@ -163,6 +157,18 @@ namespace Phork.Data
 
             this.ObservedPropertyChanged = null;
             this.ObservedPropertyRemoved = null;
+        }
+
+        private static bool ShouldReduceRoot(LambdaExpression expression, object root = null)
+        {
+            if (!(expression.Body is MemberExpression))
+            {
+                return false;
+            }
+
+            root = root ?? MemberExpressionHelper.GetRootObject(expression);
+
+            return !(root is INotifyPropertyChanged);
         }
 
         #region Equality Comparers

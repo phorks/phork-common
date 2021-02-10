@@ -5,21 +5,21 @@ namespace System.Collections.Generic
 {
     public static class ListExtensions
     {
-        public static void Move<T>(this IList<T> collection, int oldIndex, int newIndex)
+        public static void Move<T>(this IList<T> list, int oldIndex, int newIndex)
         {
-            Guard.ArgumentNotNull(collection, nameof(collection));
+            Guard.ArgumentNotNull(list, nameof(list));
 
 
-            if (collection is ObservableCollection<T> observableCollection)
+            if (list is ObservableCollection<T> observableCollection)
             {
                 observableCollection.Move(oldIndex, newIndex);
             }
             else
             {
-                var removedItem = collection[oldIndex];
+                var removedItem = list[oldIndex];
 
-                collection.RemoveAt(oldIndex);
-                collection.Insert(newIndex, removedItem);
+                list.RemoveAt(oldIndex);
+                list.Insert(newIndex, removedItem);
             }
         }
     }

@@ -51,20 +51,26 @@ namespace Phork.Expressions
             return constant.Value;
         }
 
-        public static MemberExpression[] GetOrderedChain(LambdaExpression expression)
+        /// <summary>
+        /// If the expression is a chain of <see cref="MemberExpression"/>s, or if the expression is a <see cref="LambdaExpression"/> and its body is a chain of <see cref="MemberExpression"/>s it will return an array of <see cref="MemberExpression"/>s starting from the left-most one, otherwise, null will be returned.
+        /// </summary>
+        /// <param name="expression"></param>
+        public static MemberExpression[] GetOrderedMembers(Expression expression)
         {
             Guard.ArgumentNotNull(expression, nameof(expression));
 
+            expression = (expression as LambdaExpression)?.Body ?? expression;
+
             var expressions = new Stack<MemberExpression>();
 
-            var iterator = expression.Body as MemberExpression;
+            if (!(expression is MemberExpression iterator))
+            {
+                return null;
+            }
+
             while (iterator != null)
             {
-                if (iterator is MemberExpression member)
-                {
-                    expressions.Push(member);
-                }
-
+                expressions.Push(iterator);
                 iterator = iterator.Expression as MemberExpression;
             }
 
@@ -83,7 +89,7 @@ namespace Phork.Expressions
         {
             Guard.ArgumentNotNull(expression, nameof(expression));
 
-            var expressions = GetOrderedChain(expression);
+            var expressions = GetOrderedMembers(expression);
 
             if (expressions.Length <= 1)
             {
@@ -100,6 +106,39 @@ namespace Phork.Expressions
             }
 
             return Expression.Lambda<Func<T>>(newExpression);
+        }
+
+        public static bool TryReduceRootToConstant<T>(
+            Expression<Func<T>> expression,
+            out Expression<Func<T>> reducedExpression,
+            out object root)
+        {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
+            var expressions = GetOrderedMembers(expression);
+
+            if (expressions.Length <= 0)
+            {
+                reducedExpression = expression;
+
+                root = expressions.Length == 1
+                    ? ExpressionHelper.Evaluate(expressions[0])
+                    : null;
+
+                return false;
+            }
+
+            root = ExpressionHelper.Evaluate(expressions[0]);
+
+            Expression newExpression = Expression.Constant(root, expressions[0].Type);
+
+            for (int i = 1; i < expressions.Length; i++)
+            {
+                newExpression = Expression.MakeMemberAccess(newExpression, expressions[i].Member);
+            }
+
+            reducedExpression = Expression.Lambda<Func<T>>(newExpression);
+            return true;
         }
     }
 }

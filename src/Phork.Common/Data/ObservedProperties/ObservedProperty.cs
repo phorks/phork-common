@@ -105,7 +105,8 @@ namespace Phork.Data
 
             public ObservedPropertyNode Next { get; set; }
 
-            public ObservedPropertyNode(MemberExpression expression,
+            public ObservedPropertyNode(
+                MemberExpression expression,
                 ObservedProperty observer)
             {
                 this.objectAccessor = Expression.Lambda(expression.Expression).Compile();

@@ -33,6 +33,23 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         }
 
         [Fact]
+        public void Expression_With_No_INotifyPropertyChanged_Part_Is_Handled_Correctly()
+        {
+            var context = new ObservedPropertyContext();
+
+            var firstNonBindable = ObservedPropertyModels.CreateFirstNonBindable("");
+            var secondNonBindable = firstNonBindable.Second;
+
+            Expression<Func<SecondNonBindable>> expression1 = () => firstNonBindable.Second;
+            Expression<Func<SecondNonBindable>> expression2 = () => secondNonBindable;
+
+            var property1 = context.GetOrAdd(expression1);
+            var property2 = context.GetOrAdd(expression2);
+
+            Assert.Equal(property1, property2);
+        }
+
+        [Fact]
         public void Scoped_Expressions_Receive_Correct_ObservedProperties()
         {
             var context = new ObservedPropertyContext();
