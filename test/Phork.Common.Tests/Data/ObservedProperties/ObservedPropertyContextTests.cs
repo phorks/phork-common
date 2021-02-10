@@ -1,54 +1,10 @@
 ﻿using Phork.Data;
-using System;
-using System.Linq.Expressions;
 using Xunit;
 
 namespace Phork.Common.Tests.Data.ObservedProperties
 {
     public class ObservedPropertyContextTests
     {
-        [Fact]
-        public void Non_INotifyPropertyChanged_Parts_Are_Reduced()
-        {
-            var context = new ObservedPropertyContext();
-
-            var firstNonBindable = ObservedPropertyModels.CreateFirstNonBindable("");
-            var secondNonBindable = firstNonBindable.Second;
-            var firstBindable = secondNonBindable.FirstBindable;
-            var secondBindable = firstBindable.Second;
-
-            Expression<Func<string>> expression1 = () => firstNonBindable.Second.FirstBindable.Second.Third.Value;
-            Expression<Func<string>> expression2 = () => secondNonBindable.FirstBindable.Second.Third.Value;
-            Expression<Func<string>> expression3 = () => firstBindable.Second.Third.Value;
-            Expression<Func<string>> expression4 = () => secondBindable.Third.Value;
-
-            var property1 = context.GetOrAdd(expression1);
-            var property2 = context.GetOrAdd(expression2);
-            var property3 = context.GetOrAdd(expression3);
-            var property4 = context.GetOrAdd(expression4);
-
-            Assert.Equal(property1, property2);
-            Assert.Equal(property2, property3);
-            Assert.NotEqual(property3, property4);
-        }
-
-        [Fact]
-        public void Expression_With_No_INotifyPropertyChanged_Part_Is_Handled_Correctly()
-        {
-            var context = new ObservedPropertyContext();
-
-            var firstNonBindable = ObservedPropertyModels.CreateFirstNonBindable("");
-            var secondNonBindable = firstNonBindable.Second;
-
-            Expression<Func<SecondNonBindable>> expression1 = () => firstNonBindable.Second;
-            Expression<Func<SecondNonBindable>> expression2 = () => secondNonBindable;
-
-            var property1 = context.GetOrAdd(expression1);
-            var property2 = context.GetOrAdd(expression2);
-
-            Assert.Equal(property1, property2);
-        }
-
         [Fact]
         public void Scoped_Expressions_Receive_Correct_ObservedProperties()
         {

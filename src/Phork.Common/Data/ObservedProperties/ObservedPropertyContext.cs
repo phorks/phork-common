@@ -1,11 +1,8 @@
 ﻿using Phork.Collections.EqualityComparers;
-using Phork.Expressions;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 
 namespace Phork.Data
 {
@@ -13,11 +10,8 @@ namespace Phork.Data
     {
         private bool isDisposed = false;
 
-        private readonly Dictionary<LambdaExpression, ObservedProperty> properties
-            = new Dictionary<LambdaExpression, ObservedProperty>();
-
-        private readonly Dictionary<(object root, string expression), ObservedProperty> scopedProperties
-            = new Dictionary<(object root, string expression), ObservedProperty>(ScopedKeyEqualityComparer.Instance);
+        private readonly Dictionary<MemberAccessor, ObservedProperty> properties
+            = new Dictionary<MemberAccessor, ObservedProperty>();
 
         private readonly HashSet<ObservedProperty> activeProperties;
 
@@ -36,49 +30,35 @@ namespace Phork.Data
             }
         }
 
-        public ObservedProperty<T> GetOrAdd<T>(Expression<Func<T>> propertyAccessor)
+        public ObservedProperty<T> GetOrAdd<T>(Expression<Func<T>> accessorExpression)
         {
-            Guard.ArgumentNotNull(propertyAccessor, nameof(propertyAccessor));
+            return this.GetOrAdd(MemberAccessor.Create(accessorExpression));
+        }
+
+        public ObservedProperty<T> GetOrAdd<T>(MemberAccessor<T> accessor)
+        {
+            Guard.ArgumentNotNull(accessor, nameof(accessor));
 
             if (this.isDisposed)
             {
                 throw new ObjectDisposedException(typeof(ObservedPropertyContext).FullName);
             }
 
-            ObservedProperty property;
-
-            if (ShouldReduceRoot(propertyAccessor))
+            if (accessor.Type == MemberAccessorType.Constant)
             {
-                bool isReducible = MemberExpressionHelper.TryReduceRootToConstant(
-                    propertyAccessor,
-                    out propertyAccessor,
-                    out var root);
-
-                while (isReducible && ShouldReduceRoot(propertyAccessor, root))
-                {
-                    isReducible = MemberExpressionHelper.TryReduceRootToConstant(
-                        propertyAccessor,
-                        out propertyAccessor,
-                        out root);
-                }
-
-                var key = (root, propertyAccessor.ToString());
-
-                if (!this.scopedProperties.TryGetValue(key, out property))
-                {
-                    property = this.CreateObservedProperty(propertyAccessor);
-                    this.scopedProperties.Add(key, property);
-                }
+                throw new ArgumentException($"Unable to create {typeof(ObservedProperty).FullName}. An accessor with a constant expression cannot be used to create ObservedProperties.", nameof(accessor));
             }
-            else if (!this.properties.TryGetValue(propertyAccessor, out property))
+
+
+            if (!this.properties.TryGetValue(accessor, out ObservedProperty property))
             {
-                property = this.CreateObservedProperty(propertyAccessor);
-                this.properties.Add(propertyAccessor, property);
+                property = this.CreateObservedProperty(accessor);
+                this.properties.Add(accessor, property);
             }
 
             if (!(property is ObservedProperty<T> typedProperty))
             {
-                throw new InvalidOperationException($"Unable to create an observed property. A property with the expression {propertyAccessor} is already being observed but its value type is {property.ValueType} which is not assignable to {typeof(T).FullName}.");
+                throw new InvalidOperationException($"Unable to create {typeof(ObservedProperty).FullName}. A property with the expression {accessor} is already being observed but its value type is {property.ValueType} which is not assignable to {typeof(T).FullName}.");
             }
 
             if (this.trackInactiveObservers)
@@ -94,11 +74,16 @@ namespace Phork.Data
             this.ObservedPropertyChanged?.Invoke(this, new ObservedPropertyChangedEventArgs(observedProperty));
         }
 
-        private ObservedProperty<T> CreateObservedProperty<T>(Expression<Func<T>> propertyAccessor)
+        private ObservedProperty<T> CreateObservedProperty<T>(MemberAccessor<T> accessor)
         {
             ObservedProperty captured = null;
-            var property = ObservedProperty.Create(propertyAccessor, () => this.OnObservedPropertyChanged(captured));
+
+            var property = ObservedProperty.Create(
+                accessor.Expression,
+                () => this.OnObservedPropertyChanged(captured));
+
             captured = property;
+
             return property;
         }
 
@@ -113,14 +98,6 @@ namespace Phork.Data
             {
                 item.Value.Dispose();
                 this.properties.Remove(item.Key);
-                this.ObservedPropertyRemoved?.Invoke(this, new ObservedPropertyRemovedEventArgs(item.Value));
-            }
-
-            foreach (var item
-                in this.scopedProperties.Where(x => !this.activeProperties.Contains(x.Value)).ToArray())
-            {
-                item.Value.Dispose();
-                this.scopedProperties.Remove(item.Key);
                 this.ObservedPropertyRemoved?.Invoke(this, new ObservedPropertyRemovedEventArgs(item.Value));
             }
 
@@ -148,93 +125,8 @@ namespace Phork.Data
 
             this.properties.Clear();
 
-            foreach (var item in this.scopedProperties.Values)
-            {
-                item.Dispose();
-            }
-
-            this.scopedProperties.Clear();
-
             this.ObservedPropertyChanged = null;
             this.ObservedPropertyRemoved = null;
         }
-
-        private static bool ShouldReduceRoot(LambdaExpression expression, object root = null)
-        {
-            if (!(expression.Body is MemberExpression))
-            {
-                return false;
-            }
-
-            root = root ?? MemberExpressionHelper.GetRootObject(expression);
-
-            return !(root is INotifyPropertyChanged);
-        }
-
-        #region Equality Comparers
-        private class LambdaExpressionEqualityComparer : IEqualityComparer<LambdaExpression>
-        {
-            private static LambdaExpressionEqualityComparer _instance;
-            public static LambdaExpressionEqualityComparer Instance
-            {
-                get
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new LambdaExpressionEqualityComparer();
-                    }
-
-                    return _instance;
-                }
-            }
-
-            private LambdaExpressionEqualityComparer()
-            {
-            }
-
-            public bool Equals(LambdaExpression x, LambdaExpression y)
-            {
-                return x.ToString() == y.ToString();
-            }
-
-            public int GetHashCode(LambdaExpression obj)
-            {
-                return obj.ToString().GetHashCode();
-            }
-        }
-
-        private class ScopedKeyEqualityComparer : IEqualityComparer<(object, string)>
-        {
-            private static ScopedKeyEqualityComparer _instance;
-            public static ScopedKeyEqualityComparer Instance
-            {
-                get
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new ScopedKeyEqualityComparer();
-                    }
-
-                    return _instance;
-                }
-            }
-
-            private ScopedKeyEqualityComparer()
-            {
-            }
-
-
-            public bool Equals((object, string) x, (object, string) y)
-            {
-                return ReferenceEquals(x.Item1, y.Item1)
-                    && x.Item2 == y.Item2;
-            }
-
-            public int GetHashCode((object, string) obj)
-            {
-                return HashCode.Combine(RuntimeHelpers.GetHashCode(obj.Item1), obj.Item2);
-            }
-        }
-        #endregion
     }
 }
