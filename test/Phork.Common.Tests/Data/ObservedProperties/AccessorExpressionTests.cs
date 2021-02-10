@@ -13,16 +13,16 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         {
             var bindable = ObservedPropertyModels.CreateFirst("");
 
-            MemberAccessorExpression<string> ae1, ae2;
+            MemberAccessor<string> ae1, ae2;
 
             {
                 var item1 = bindable.Second;
-                ae1 = AccessorExpression.Create(() => item1.Third.Value);
+                ae1 = MemberAccessor.Create(() => item1.Third.Value);
             }
 
             {
                 var item2 = bindable.Second;
-                ae2 = AccessorExpression.Create(() => item2.Third.Value);
+                ae2 = MemberAccessor.Create(() => item2.Third.Value);
             }
 
             Assert.Equal(ae1, ae2);
@@ -34,16 +34,16 @@ namespace Phork.Common.Tests.Data.ObservedProperties
             var bindable1 = ObservedPropertyModels.CreateFirst("");
             var bindable2 = ObservedPropertyModels.CreateFirst("");
 
-            MemberAccessorExpression<string> ae1, ae2;
+            MemberAccessor<string> ae1, ae2;
 
             {
                 var item = bindable1;
-                ae1 = AccessorExpression.Create(() => item.Second.Third.Value);
+                ae1 = MemberAccessor.Create(() => item.Second.Third.Value);
             }
 
             {
                 var item = bindable2;
-                ae2 = AccessorExpression.Create(() => item.Second.Third.Value);
+                ae2 = MemberAccessor.Create(() => item.Second.Third.Value);
             }
 
             // ae1.ToString() == ae2.ToString()
@@ -56,11 +56,11 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         {
             var bindable = ObservedPropertyModels.CreateFirst("");
 
-            MemberAccessorExpression<string> ae;
+            MemberAccessor<string> ae;
 
             {
                 var item = bindable;
-                ae = AccessorExpression.Create(() => item.Second.Third.Value);
+                ae = MemberAccessor.Create(() => item.Second.Third.Value);
             }
 
             Assert.Same(ae.Root, bindable);
@@ -71,11 +71,11 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         {
             var bindable = ObservedPropertyModels.CreateFirst("");
 
-            MemberAccessorExpression<ThirdBindable> ae;
+            MemberAccessor<ThirdBindable> ae;
 
             {
                 var item = bindable;
-                ae = AccessorExpression.Create(() => item.Second.Third);
+                ae = MemberAccessor.Create(() => item.Second.Third);
             }
 
             var reduced = ae.Expression;
@@ -111,14 +111,14 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         {
             var bindable = ObservedPropertyModels.CreateFirst("");
 
-            MemberAccessorExpression<FirstBindable> ae;
+            MemberAccessor<FirstBindable> ae;
 
             {
                 var item = bindable;
-                ae = AccessorExpression.Create(() => item);
+                ae = MemberAccessor.Create(() => item);
             }
 
-            Assert.Equal(MemberAccessorExpressionType.Constant, ae.Type);
+            Assert.Equal(MemberAccessorType.Constant, ae.Type);
         }
 
         [Fact]
@@ -126,11 +126,11 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         {
             var bindable = ObservedPropertyModels.CreateFirst("");
 
-            MemberAccessorExpression<FirstBindable> ae;
+            MemberAccessor<FirstBindable> ae;
 
             {
                 var item = bindable;
-                ae = AccessorExpression.Create(() => item);
+                ae = MemberAccessor.Create(() => item);
             }
 
             Assert.False(ae.IsWriteable);

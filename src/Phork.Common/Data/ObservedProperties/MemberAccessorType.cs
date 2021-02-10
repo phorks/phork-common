@@ -1,6 +1,6 @@
 ﻿namespace Phork.Data
 {
-    public enum MemberAccessorExpressionType
+    public enum MemberAccessorType
     {
         Constant,
         Property

@@ -7,25 +7,25 @@ using System.Runtime.CompilerServices;
 
 namespace Phork.Data
 {
-    public abstract class AccessorExpression : IEquatable<AccessorExpression>
+    public abstract class MemberAccessor : IEquatable<MemberAccessor>
     {
-        public MemberAccessorExpressionType Type { get; protected set; }
+        public MemberAccessorType Type { get; protected set; }
         public object Root { get; protected set; }
         public Type RootType { get; protected set; }
         public bool IsWriteable { get; protected set; }
 
-        internal AccessorExpression()
+        internal MemberAccessor()
         {
         }
 
-        public virtual bool Equals(AccessorExpression other)
+        public virtual bool Equals(MemberAccessor other)
         {
             return ReferenceEquals(this.Root, other.Root);
         }
 
         public override bool Equals(object obj)
         {
-            return obj is AccessorExpression accessor && this.Equals(accessor);
+            return obj is MemberAccessor accessor && this.Equals(accessor);
         }
 
         public override int GetHashCode()
@@ -33,18 +33,18 @@ namespace Phork.Data
             return RuntimeHelpers.GetHashCode(this.Root);
         }
 
-        public static MemberAccessorExpression<T> Create<T>(
+        public static MemberAccessor<T> Create<T>(
             Expression<Func<T>> accessor)
         {
-            return new MemberAccessorExpression<T>(accessor, true);
+            return new MemberAccessor<T>(accessor, true);
         }
     }
 
-    public class MemberAccessorExpression<T> : AccessorExpression
+    public class MemberAccessor<T> : MemberAccessor
     {
         public Expression<Func<T>> Expression { get; }
 
-        internal MemberAccessorExpression(Expression<Func<T>> accessor, bool reduceGeneratedParts = true)
+        internal MemberAccessor(Expression<Func<T>> accessor, bool reduceGeneratedParts = true)
         {
             if (accessor.Body is MemberExpression memberBody)
             {
@@ -52,16 +52,16 @@ namespace Phork.Data
 
                 if (members.Length == 0)
                 {
-                    throw new ArgumentException($"Unable to create {typeof(AccessorExpression).Name}. Given argument is not a valid accessor expression.", nameof(accessor));
+                    throw new ArgumentException($"Unable to create {typeof(MemberAccessor).Name}. Given argument is not a valid accessor expression.", nameof(accessor));
                 }
 
                 if (!(members[0].Expression is ConstantExpression constant))
                 {
-                    throw new ArgumentException($"Unable to create {typeof(AccessorExpression).Name}. An accessor expression should have a constant root.", nameof(accessor));
+                    throw new ArgumentException($"Unable to create {typeof(MemberAccessor).Name}. An accessor expression should have a constant root.", nameof(accessor));
                 }
 
                 this.IsWriteable = ExpressionHelper.IsWriteable(members.Last());
-                this.Type = MemberAccessorExpressionType.Property;
+                this.Type = MemberAccessorType.Property;
                 this.Expression = accessor;
 
                 int i;
@@ -89,7 +89,7 @@ namespace Phork.Data
 
                     if (temp is ConstantExpression)
                     {
-                        this.Type = MemberAccessorExpressionType.Constant;
+                        this.Type = MemberAccessorType.Constant;
                         this.IsWriteable = false;
                     }
 
@@ -101,7 +101,7 @@ namespace Phork.Data
             }
             else if (accessor.Body is ConstantExpression constantBody)
             {
-                this.Type = MemberAccessorExpressionType.Constant;
+                this.Type = MemberAccessorType.Constant;
                 this.IsWriteable = false;
                 this.Root = constantBody.Value;
                 this.RootType = constantBody.Type;
@@ -109,10 +109,10 @@ namespace Phork.Data
             }
         }
 
-        public override bool Equals(AccessorExpression other)
+        public override bool Equals(MemberAccessor other)
         {
             return base.Equals(other)
-                && other is MemberAccessorExpression<T> typedOther
+                && other is MemberAccessor<T> typedOther
                 && this.Expression.ToString() == typedOther.Expression.ToString();
         }
 
@@ -121,10 +121,10 @@ namespace Phork.Data
             return HashCode.Combine(base.GetHashCode(), this.Expression.ToString());
         }
 
-        //public static implicit operator AccessorExpression<T>(Expression<Func<T>> expression)
-        //{
-        //    return new AccessorExpression<T>(expression);
-        //}
+        public static implicit operator MemberAccessor<T>(Expression<Func<T>> expression)
+        {
+            return new MemberAccessor<T>(expression, false);
+        }
 
         private bool ShouldReduce(ConstantExpression constant, bool reduceGeneratedParts)
         {
