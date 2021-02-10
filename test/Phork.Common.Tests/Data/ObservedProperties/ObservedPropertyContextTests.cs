@@ -31,8 +31,8 @@ namespace Phork.Common.Tests.Data.ObservedProperties
                 sameProperty2 = context.GetOrAdd(() => same.Second.Third.Value);
             }
 
-            Assert.NotEqual(differentProperty1, differentProperty2);
-            Assert.Equal(sameProperty1, sameProperty2);
+            Assert.NotSame(differentProperty1, differentProperty2);
+            Assert.Same(sameProperty1, sameProperty2);
         }
 
         [Fact]
