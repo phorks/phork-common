@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace Phork.Expressions
 {
@@ -77,14 +75,6 @@ namespace Phork.Expressions
             return expressions.ToArray();
         }
 
-        public static bool IsScoped(LambdaExpression expression)
-        {
-            Guard.ArgumentNotNull(expression, nameof(expression));
-
-            var rootType = GetRootType(expression);
-            return rootType.IsDefined(typeof(CompilerGeneratedAttribute));
-        }
-
         public static Expression<Func<T>> ReduceRootToConstant<T>(Expression<Func<T>> expression, out object root)
         {
             Guard.ArgumentNotNull(expression, nameof(expression));
@@ -106,39 +96,6 @@ namespace Phork.Expressions
             }
 
             return Expression.Lambda<Func<T>>(newExpression);
-        }
-
-        public static bool TryReduceRootToConstant<T>(
-            Expression<Func<T>> expression,
-            out Expression<Func<T>> reducedExpression,
-            out object root)
-        {
-            Guard.ArgumentNotNull(expression, nameof(expression));
-
-            var expressions = GetOrderedMembers(expression);
-
-            if (expressions.Length <= 0)
-            {
-                reducedExpression = expression;
-
-                root = expressions.Length == 1
-                    ? ExpressionHelper.Evaluate(expressions[0])
-                    : null;
-
-                return false;
-            }
-
-            root = ExpressionHelper.Evaluate(expressions[0]);
-
-            Expression newExpression = Expression.Constant(root, expressions[0].Type);
-
-            for (int i = 1; i < expressions.Length; i++)
-            {
-                newExpression = Expression.MakeMemberAccess(newExpression, expressions[i].Member);
-            }
-
-            reducedExpression = Expression.Lambda<Func<T>>(newExpression);
-            return true;
         }
     }
 }
