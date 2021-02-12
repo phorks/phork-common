@@ -15,6 +15,34 @@ namespace Phork.Expressions
             return lambda.Compile().DynamicInvoke();
         }
 
+        public static bool IsReadable(Expression expression)
+        {
+            Guard.ArgumentNotNull(expression, nameof(expression));
+
+            bool isReadable = false;
+
+            if (expression is IndexExpression index)
+            {
+                if (index.Indexer != null)
+                {
+                    isReadable = index.Indexer.CanRead;
+                }
+                else
+                {
+                    isReadable = true;
+                }
+            }
+            else if (expression is MemberExpression member)
+            {
+                if (member.Member is PropertyInfo property)
+                {
+                    isReadable = property.CanRead;
+                }
+            }
+
+            return isReadable;
+        }
+
         public static bool IsWriteable(Expression expression)
         {
             Guard.ArgumentNotNull(expression, nameof(expression));
@@ -37,11 +65,11 @@ namespace Phork.Expressions
                 switch (member.Member.MemberType)
                 {
                     case MemberTypes.Property:
-                        PropertyInfo property = (PropertyInfo)member.Member;
-                        isWriteable = property.CanRead;
+                        var property = member.Member as PropertyInfo;
+                        isWriteable = property.CanWrite;
                         break;
                     case MemberTypes.Field:
-                        FieldInfo field = (FieldInfo)member.Member;
+                        var field = member.Member as FieldInfo;
                         isWriteable = !field.IsInitOnly && !field.IsLiteral;
                         break;
                 }

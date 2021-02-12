@@ -3,6 +3,6 @@
     public enum MemberAccessorType
     {
         Constant,
-        Property
+        Member
     }
 }

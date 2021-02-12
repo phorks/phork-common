@@ -6,7 +6,7 @@ using Xunit.Sdk;
 
 namespace Phork.Common.Tests.Data.ObservedProperties
 {
-    public class AccessorExpressionTests
+    public class MemberAccessorTests
     {
         [Fact]
         public void Same_Scoped_Expressions_With_Different_ToStrings_Are_Equal()
@@ -122,7 +122,7 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         }
 
         [Fact]
-        public void Reduced_To_Constant_Accessor_Has_False_IsWriteable()
+        public void Reduced_To_Constant_Accessor_Is_ReadOnly()
         {
             var bindable = ObservedPropertyModels.CreateFirst("");
 
@@ -133,7 +133,27 @@ namespace Phork.Common.Tests.Data.ObservedProperties
                 ae = MemberAccessor.Create(() => item);
             }
 
-            Assert.False(ae.IsWriteable);
+            Assert.True(ae.IsReadOnly);
+        }
+
+        [Fact]
+        public void ReadOnly_Field_Accessor_Is_ReadOnly()
+        {
+            var item = new AccessTestObject();
+
+            var ae = MemberAccessor.Create(() => item.ReadOnlyField);
+
+            Assert.True(ae.IsReadOnly);
+        }
+
+        [Fact]
+        public void ReadOnly_Property_Accessor_Is_ReadOnly()
+        {
+            var item = new AccessTestObject();
+
+            var ae = MemberAccessor.Create(() => item.ReadOnlyProperty);
+
+            Assert.True(ae.IsReadOnly);
         }
     }
 }

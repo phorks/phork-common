@@ -8,7 +8,7 @@ namespace Phork.Common.Tests.Data.ObservedProperties
         [Fact]
         public void Scoped_Expressions_Receive_Correct_ObservedProperties()
         {
-            var context = new ObservedPropertyContext();
+            var context = new ObservedPropertyContext(_ => { });
             var bindable1 = ObservedPropertyModels.CreateFirst("");
             var bindable2 = ObservedPropertyModels.CreateFirst("");
 
@@ -33,41 +33,6 @@ namespace Phork.Common.Tests.Data.ObservedProperties
 
             Assert.NotSame(differentProperty1, differentProperty2);
             Assert.Same(sameProperty1, sameProperty2);
-        }
-
-        [Fact]
-        public void ClearInactiveProperties_Disposes_Inactive_Properties()
-        {
-            bool activeChanged = false;
-            bool inactiveChanged = false;
-
-            var context = new ObservedPropertyContext(trackInactiveProperties: true);
-
-            var activeBindable = ObservedPropertyModels.CreateFirst("");
-            var inactiveBindable = ObservedPropertyModels.CreateFirst("");
-
-            var activeProperty = context.GetOrAdd(() => activeBindable.Second.Third.Value);
-            var inactiveProperty = context.GetOrAdd(() => inactiveBindable.Second.Third.Value);
-
-            context.ObservedPropertyChanged += (_, e) =>
-            {
-                if (e.ObservedProperty == activeProperty)
-                    activeChanged = true;
-
-                if (e.ObservedProperty == inactiveProperty)
-                    inactiveChanged = true;
-            };
-
-            context.ClearInactiveProperties();
-
-            context.GetOrAdd(() => activeBindable.Second.Third.Value);
-            context.ClearInactiveProperties();
-
-            activeBindable.Second.Third.Value = "New";
-            inactiveBindable.Second.Third.Value = "New";
-
-            Assert.True(activeChanged);
-            Assert.False(inactiveChanged);
         }
     }
 }

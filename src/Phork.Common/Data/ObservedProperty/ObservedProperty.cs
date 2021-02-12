@@ -1,80 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Phork.Expressions;
+using System;
 using System.ComponentModel;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Phork.Data
 {
-    public class ObservedProperty
+    public abstract class ObservedProperty
     {
         protected ObservedPropertyNode FirstNode { get; }
-        protected Action Callback { get; }
         protected bool IsSuppressed { get; private set; }
 
         public Type ValueType { get; }
 
 
-        internal ObservedProperty(LambdaExpression propertyAccessor, Action callback)
+        internal ObservedProperty(MemberAccessor accessor)
         {
-            Guard.ArgumentNotNull(propertyAccessor, nameof(propertyAccessor));
-            Guard.ArgumentNotNull(callback, nameof(callback));
+            Guard.ArgumentNotNull(accessor, nameof(accessor));
 
-            this.ValueType = propertyAccessor.ReturnType;
-
-            this.Callback = callback;
-
-            Stack<MemberExpression> chain = new Stack<MemberExpression>();
-
-            var current = propertyAccessor.Body as MemberExpression;
-            while (current != null)
+            if (accessor.Type == MemberAccessorType.Constant)
             {
-                MemberExpression parent = null;
-
-                if (current.Member is PropertyInfo || current.Member is FieldInfo)
-                {
-                    chain.Push(current);
-
-                    if (current.Expression is MemberExpression oarentMemberExpression)
-                    {
-                        parent = oarentMemberExpression;
-                    }
-                }
-                else
-                {
-                    throw new NotSupportedException("Unable to create property observer for the given expression.");
-                }
-
-                current = parent;
+                throw new ArgumentException($"Unable to create {typeof(ObservedProperty).Name}. An accessor with a constant expression is not a valid accessor.", nameof(accessor));
             }
 
-            if (!chain.Any())
-            {
-                throw new NotSupportedException("Unable to create property observer for the given expression.");
-            }
+            this.ValueType = accessor.LambdaExpression.ReturnType;
 
-            current = chain.Pop();
-            var currentNode = new ObservedPropertyNode(current, this);
+            var members = MemberExpressionHelper.GetOrderedMembers(accessor.LambdaExpression);
+
+            var currentNode = new ObservedPropertyNode(members[0], this);
 
             this.FirstNode = currentNode;
 
-            while (chain.Count > 0)
+            for (int i = 1; i < members.Length; i++)
             {
-                current = chain.Pop();
-                currentNode.Next = new ObservedPropertyNode(current, this);
+                currentNode.Next = new ObservedPropertyNode(members[i], this);
                 currentNode = currentNode.Next;
             }
         }
 
-        protected virtual void OnValueUpdated()
+        private void RaiseValueUpdated()
         {
             if (this.IsSuppressed)
             {
                 return;
             }
 
-            this.Callback();
+            this.OnValueUpdated();
+        }
+
+        protected virtual void OnValueUpdated()
+        {
         }
 
         public void Refresh()
@@ -166,7 +141,7 @@ namespace Phork.Data
 
                     if (updated != false)
                     {
-                        this.observer.OnValueUpdated();
+                        this.observer.RaiseValueUpdated();
                     }
                 }
             }
@@ -193,67 +168,32 @@ namespace Phork.Data
             }
         }
 
-        public static ObservedProperty Create(LambdaExpression propertyAccessor, Action callback)
-        {
-            return new ObservedProperty(propertyAccessor, callback);
-        }
-
         public static ObservedProperty<T> Create<T>(Expression<Func<T>> propertyAccessor, Action callback)
         {
             return new ObservedProperty<T>(propertyAccessor, callback);
         }
     }
 
-    public class ObservedProperty<T> : ObservedProperty,
-        IValueReader<T>,
-        IValueWriter<T>
+    public class ObservedProperty<T> : ObservedProperty
     {
-        public Expression<Func<T>> PropertyAccessor { get; }
+        private readonly Action callback;
 
-        private Func<T> _valueGetter;
-        private Func<T> ValueGetter
+        public MemberAccessor<T> MemberAccessor { get; }
+
+        internal ObservedProperty(MemberAccessor<T> accessor, Action callback)
+            : base(accessor)
         {
-            get
-            {
-                if (this._valueGetter == null)
-                {
-                    this._valueGetter = this.PropertyAccessor.Compile();
-                }
+            Guard.ArgumentNotNull(callback, nameof(callback));
 
-                return this._valueGetter;
-            }
+            this.MemberAccessor = accessor;
+            this.callback = callback;
         }
 
-
-        private Action<T> _valueSetter;
-        private Action<T> ValueSetter
+        protected override void OnValueUpdated()
         {
-            get
-            {
-                if (this._valueSetter == null)
-                {
-                    var valueParameter = Expression.Parameter(typeof(T));
-                    this._valueSetter = Expression
-                        .Lambda<Action<T>>(
-                            Expression.Assign(this.PropertyAccessor.Body, valueParameter),
-                            valueParameter)
-                        .Compile();
-                }
+            base.OnValueUpdated();
 
-                return this._valueSetter;
-            }
-        }
-
-        public T Value
-        {
-            get => this.ValueGetter();
-            set => this.ValueSetter(value);
-        }
-
-        internal ObservedProperty(Expression<Func<T>> propertyAccessor, Action callback)
-            : base(propertyAccessor, callback)
-        {
-            this.PropertyAccessor = propertyAccessor;
+            this.callback();
         }
     }
 }

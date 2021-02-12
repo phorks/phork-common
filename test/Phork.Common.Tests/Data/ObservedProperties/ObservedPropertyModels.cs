@@ -84,4 +84,11 @@ namespace Phork.Common.Tests.Data.ObservedProperties
             set => this.SetProperty(ref this._value, value);
         }
     }
+
+    public class AccessTestObject
+    {
+        public readonly int ReadOnlyField;
+
+        public int ReadOnlyProperty { get; }
+    }
 }

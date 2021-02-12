@@ -2,11 +2,11 @@
 
 namespace Phork.Data
 {
-    public class ObservedPropertyRemovedEventArgs : EventArgs
+    public class ObservedPropertyChangedEventArgs : EventArgs
     {
         public ObservedProperty ObservedProperty { get; }
 
-        public ObservedPropertyRemovedEventArgs(ObservedProperty observedProperty)
+        public ObservedPropertyChangedEventArgs(ObservedProperty observedProperty)
         {
             this.ObservedProperty = observedProperty;
         }

@@ -9,13 +9,16 @@ namespace Phork.Data
 {
     public abstract class MemberAccessor : IEquatable<MemberAccessor>
     {
+        internal LambdaExpression LambdaExpression { get; }
+
         public MemberAccessorType Type { get; protected set; }
         public object Root { get; protected set; }
         public Type RootType { get; protected set; }
-        public bool IsWriteable { get; protected set; }
+        public bool IsReadOnly { get; protected set; }
 
-        internal MemberAccessor()
+        internal MemberAccessor(LambdaExpression lambdaExpression)
         {
+            this.LambdaExpression = lambdaExpression;
         }
 
         public virtual bool Equals(MemberAccessor other)
@@ -40,11 +43,12 @@ namespace Phork.Data
         }
     }
 
-    public class MemberAccessor<T> : MemberAccessor
+    public class MemberAccessor<T> : MemberAccessor, IValueReader<T>, IValueWriter<T>
     {
         public Expression<Func<T>> Expression { get; }
 
         internal MemberAccessor(Expression<Func<T>> accessor, bool reduceGeneratedParts = true)
+            : base(accessor)
         {
             if (accessor.Body is MemberExpression memberBody)
             {
@@ -60,8 +64,8 @@ namespace Phork.Data
                     throw new ArgumentException($"Unable to create {typeof(MemberAccessor).Name}. An accessor expression should have a constant root.", nameof(accessor));
                 }
 
-                this.IsWriteable = ExpressionHelper.IsWriteable(members.Last());
-                this.Type = MemberAccessorType.Property;
+                this.IsReadOnly = !ExpressionHelper.IsWriteable(members.Last());
+                this.Type = MemberAccessorType.Member;
                 this.Expression = accessor;
 
                 int i;
@@ -90,7 +94,7 @@ namespace Phork.Data
                     if (temp is ConstantExpression)
                     {
                         this.Type = MemberAccessorType.Constant;
-                        this.IsWriteable = false;
+                        this.IsReadOnly = true;
                     }
 
                     this.Expression = System.Linq.Expressions.Expression.Lambda<Func<T>>(temp);
@@ -102,7 +106,7 @@ namespace Phork.Data
             else if (accessor.Body is ConstantExpression constantBody)
             {
                 this.Type = MemberAccessorType.Constant;
-                this.IsWriteable = false;
+                this.IsReadOnly = true;
                 this.Root = constantBody.Value;
                 this.RootType = constantBody.Type;
                 this.Expression = accessor;
@@ -135,5 +139,51 @@ namespace Phork.Data
 
             return false;
         }
+
+        #region Value
+        private Func<T> _valueGetter;
+        private Func<T> ValueGetter
+        {
+            get
+            {
+                if (this._valueGetter == null)
+                {
+                    this._valueGetter = this.Expression.Compile();
+                }
+
+                return this._valueGetter;
+            }
+        }
+
+        private Action<T> _valueSetter;
+        private Action<T> ValueSetter
+        {
+            get
+            {
+                if (this._valueSetter == null)
+                {
+                    if (this.IsReadOnly)
+                    {
+                        throw new InvalidOperationException($"Unable to set the value of '{this.Expression}'. The target is read-only.");
+                    }
+
+                    var valueParameter = System.Linq.Expressions.Expression.Parameter(typeof(T));
+                    this._valueSetter = System.Linq.Expressions.Expression
+                        .Lambda<Action<T>>(
+                            System.Linq.Expressions.Expression.Assign(this.Expression.Body, valueParameter),
+                            valueParameter)
+                        .Compile();
+                }
+
+                return this._valueSetter;
+            }
+        }
+
+        public T Value
+        {
+            get => this.ValueGetter();
+            set => this.ValueSetter(value);
+        }
+        #endregion
     }
 }
