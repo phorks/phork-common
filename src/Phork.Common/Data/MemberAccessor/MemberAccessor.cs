@@ -41,6 +41,16 @@ namespace Phork.Data
         {
             return new MemberAccessor<T>(accessor, true);
         }
+
+        public static bool operator ==(MemberAccessor lhs, MemberAccessor rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(MemberAccessor lhs, MemberAccessor rhs)
+        {
+            return !(lhs == rhs);
+        }
     }
 
     public class MemberAccessor<T> : MemberAccessor, IValueReader<T>, IValueWriter<T>
@@ -123,11 +133,6 @@ namespace Phork.Data
         public override int GetHashCode()
         {
             return HashCode.Combine(base.GetHashCode(), this.Expression.ToString());
-        }
-
-        public static implicit operator MemberAccessor<T>(Expression<Func<T>> expression)
-        {
-            return new MemberAccessor<T>(expression, false);
         }
 
         private bool ShouldReduce(ConstantExpression constant, bool reduceGeneratedParts)

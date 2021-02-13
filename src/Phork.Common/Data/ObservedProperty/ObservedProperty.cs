@@ -70,7 +70,7 @@ namespace Phork.Data
             }
         }
 
-        protected class ObservedPropertyNode : IDisposable
+        protected sealed class ObservedPropertyNode : IDisposable
         {
             private readonly Delegate objectAccessor;
             private readonly MemberInfo memberInfo;
@@ -168,10 +168,13 @@ namespace Phork.Data
             }
         }
 
-        public static ObservedProperty<T> Create<T>(Expression<Func<T>> propertyAccessor, Action callback)
+        public static ObservedProperty<T> Create<T>(MemberAccessor<T> accessor, Action callback)
         {
-            return new ObservedProperty<T>(propertyAccessor, callback);
+            return new ObservedProperty<T>(accessor, callback);
         }
+
+        public static ObservedProperty<T> Create<T>(Expression<Func<T>> accessor, Action callback)
+            => Create(MemberAccessor.Create(accessor), callback);
     }
 
     public class ObservedProperty<T> : ObservedProperty
