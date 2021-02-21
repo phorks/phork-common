@@ -44,13 +44,16 @@ namespace Phork.Data
 
         public static bool operator ==(MemberAccessor lhs, MemberAccessor rhs)
         {
+            if (lhs is null)
+            {
+                return rhs is null;
+            }
+
             return lhs.Equals(rhs);
         }
 
         public static bool operator !=(MemberAccessor lhs, MemberAccessor rhs)
-        {
-            return !(lhs == rhs);
-        }
+            => !(lhs == rhs);
     }
 
     public class MemberAccessor<T> : MemberAccessor, IValueReader<T>, IValueWriter<T>

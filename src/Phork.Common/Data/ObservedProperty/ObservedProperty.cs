@@ -52,9 +52,9 @@ namespace Phork.Data
         {
         }
 
-        public void Refresh()
+        public bool TryRefreshSubscriptions()
         {
-            this.FirstNode.Refresh();
+            return this.FirstNode.TryRefreshSubscriptions();
         }
 
         public IDisposable Suppress()
@@ -107,14 +107,23 @@ namespace Phork.Data
                 }
             }
 
-            public bool Refresh()
+            public bool TryRefreshSubscriptions()
+            {
+                var updated = this.UpdateObject();
+
+                var nextUpdated = this.Next?.TryRefreshSubscriptions() == true;
+
+                return updated || nextUpdated;
+            }
+
+            private bool Update()
             {
                 if (!this.UpdateObject())
                 {
                     return false;
                 }
 
-                return this.Next == null || this.Next.Refresh();
+                return this.Next == null || this.Next.Update();
             }
 
             private bool UpdateObject()
@@ -137,7 +146,7 @@ namespace Phork.Data
             {
                 if (e?.PropertyName == this.memberInfo.Name || e?.PropertyName == null)
                 {
-                    var updated = this.Next?.Refresh();
+                    var updated = this.Next?.Update();
 
                     if (updated != false)
                     {
