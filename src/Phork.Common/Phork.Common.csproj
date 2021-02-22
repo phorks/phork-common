@@ -7,6 +7,11 @@
     <RepositoryUrl>https://github.com/phorks/phork-common</RepositoryUrl>
     <PackageTags>dotnet;dotnetcore;</PackageTags>
     <RootNamespace>Phork</RootNamespace>
+    <Version>1.0.5</Version>
+    <PackageLicenseFile></PackageLicenseFile>
+    <Description>Common utilities for platform-specific Phorks</Description>
+    <Copyright>Copyright © 2021 Phorks</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
