@@ -1,5 +1,4 @@
 ﻿using Phork.Expressions;
-using Phork.Extensions;
 using System;
 using System.ComponentModel;
 using System.Linq.Expressions;
@@ -131,7 +130,7 @@ namespace Phork.Data
             {
                 var newObject = this.objectAccessor.DynamicInvoke();
 
-                if (newObject.NullSafeEquals(this.currentObject))
+                if (Equals(newObject, this.currentObject))
                 {
                     return false;
                 }

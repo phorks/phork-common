@@ -1,5 +1,4 @@
-﻿using Phork.Extensions;
-using System;
+﻿using System;
 
 namespace Phork.Data.ValueConverter
 {
@@ -47,7 +46,7 @@ namespace Phork.Data.ValueConverter
         {
             return obj is DelegateValueConverter<TSource, TTarget> typedObj
                 && typedObj.converter.Equals(this.converter)
-                && typedObj.reverseConverter.NullSafeEquals(this.reverseConverter);
+                && Equals(typedObj.reverseConverter, this.reverseConverter);
         }
 
         public override int GetHashCode()
