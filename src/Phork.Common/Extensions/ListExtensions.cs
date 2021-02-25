@@ -1,7 +1,7 @@
-﻿using Phork;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace System.Collections.Generic
+namespace Phork.Extensions
 {
     public static class ListExtensions
     {
@@ -11,9 +11,7 @@ namespace System.Collections.Generic
 
 
             if (list is ObservableCollection<T> observableCollection)
-            {
                 observableCollection.Move(oldIndex, newIndex);
-            }
             else
             {
                 var removedItem = list[oldIndex];

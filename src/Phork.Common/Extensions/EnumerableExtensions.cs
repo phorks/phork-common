@@ -1,7 +1,8 @@
-﻿using Phork;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace System.Collections.Generic
+namespace Phork.Extensions
 {
     public static class EnumerableExtensions
     {

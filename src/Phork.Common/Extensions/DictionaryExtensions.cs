@@ -1,6 +1,6 @@
-﻿using Phork;
+﻿using System.Collections.Generic;
 
-namespace System.Collections.Generic
+namespace Phork.Extensions
 {
     public static class DictionaryExtensions
     {
