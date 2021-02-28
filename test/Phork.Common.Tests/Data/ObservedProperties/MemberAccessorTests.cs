@@ -63,7 +63,7 @@ namespace Phork.Common.Tests.Data.ObservedProperties
                 ae = MemberAccessor.Create(() => item.Second.Third.Value);
             }
 
-            Assert.Same(ae.Root, bindable);
+            Assert.Same(ae.Target, bindable);
         }
 
         [Fact]

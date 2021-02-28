@@ -12,8 +12,8 @@ namespace Phork.Data
         internal LambdaExpression LambdaExpression { get; }
 
         public MemberAccessorType Type { get; protected set; }
-        public object Root { get; protected set; }
-        public Type RootType { get; protected set; }
+        public object Target { get; protected set; }
+        public Type TargetType { get; protected set; }
         public bool IsReadOnly { get; protected set; }
 
         internal MemberAccessor(LambdaExpression lambdaExpression)
@@ -23,7 +23,7 @@ namespace Phork.Data
 
         public virtual bool Equals(MemberAccessor other)
         {
-            return ReferenceEquals(this.Root, other.Root);
+            return ReferenceEquals(this.Target, other.Target);
         }
 
         public override bool Equals(object obj)
@@ -33,7 +33,7 @@ namespace Phork.Data
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCode(this.Root);
+            return RuntimeHelpers.GetHashCode(this.Target);
         }
 
         public static MemberAccessor<T> Create<T>(
@@ -74,7 +74,7 @@ namespace Phork.Data
 
                 if (!(members[0].Expression is ConstantExpression constant))
                 {
-                    throw new ArgumentException($"Unable to create {typeof(MemberAccessor).Name}. An accessor expression should have a constant root.", nameof(accessor));
+                    throw new ArgumentException($"Unable to create {typeof(MemberAccessor).Name}. An accessor expression should have a constant target.", nameof(accessor));
                 }
 
                 this.IsReadOnly = !ExpressionHelper.IsWriteable(members.Last());
@@ -113,15 +113,15 @@ namespace Phork.Data
                     this.Expression = System.Linq.Expressions.Expression.Lambda<Func<T>>(temp);
                 }
 
-                this.Root = constant.Value;
-                this.RootType = constant.Type;
+                this.Target = constant.Value;
+                this.TargetType = constant.Type;
             }
             else if (accessor.Body is ConstantExpression constantBody)
             {
                 this.Type = MemberAccessorType.Constant;
                 this.IsReadOnly = true;
-                this.Root = constantBody.Value;
-                this.RootType = constantBody.Type;
+                this.Target = constantBody.Value;
+                this.TargetType = constantBody.Type;
                 this.Expression = accessor;
             }
         }
