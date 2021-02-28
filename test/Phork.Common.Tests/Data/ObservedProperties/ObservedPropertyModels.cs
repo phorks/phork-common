@@ -1,4 +1,4 @@
-﻿using Phork.Data;
+﻿using Phork.Common.Tests.Models;
 
 namespace Phork.Common.Tests.Data.ObservedProperties
 {
