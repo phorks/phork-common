@@ -11,7 +11,9 @@ namespace Phork.Extensions
 
 
             if (list is ObservableCollection<T> observableCollection)
+            {
                 observableCollection.Move(oldIndex, newIndex);
+            }
             else
             {
                 var removedItem = list[oldIndex];
