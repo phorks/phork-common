@@ -10,7 +10,8 @@ namespace Phork.Extensions
         {
             Guard.ArgumentNotNull(enumerable, nameof(enumerable));
 
-            return new ObservableCollection<T>(enumerable);
+            return enumerable as ObservableCollection<T>
+                ?? new ObservableCollection<T>(enumerable);
         }
 
         public static int GetSequenceHashCode<T>(this IEnumerable<T> enumerable)
